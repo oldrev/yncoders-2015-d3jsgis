@@ -1,0 +1,84 @@
+﻿<html>
+    <head>
+        <script src="d3.min.js"></script>
+    </head>
+    <div id="map" style="width:800px; height:745px; border:1px solid #c0c0c0"></div>
+    <p>平均车速：<span id="avg_speed"></span>
+    </p>
+
+    <script>
+        var geojsonPath = "km-main.json";
+        var roadsGeojsonPath = "km-vehicles-avg-speed.json";
+        var width  = 798;
+        var height = 743;
+
+        var svg = d3.select("#map").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", "translate(0,0)");
+        
+        var projection = 
+            d3.geo.mercator()
+            .center([102.73179,25.04824]) //地图中心坐标（经纬度）
+            .scale(2900*(width + 1) / 2 / Math.PI) //地图缩放比例
+            .translate([width/2, height/2]);
+
+        //矢量地图到 SVG Path转换函数
+        var path = d3.geo.path().projection(projection);
+
+        var mapLayer = svg.append("g");
+        var roadsLayer = svg.append("g");
+
+        d3.json(geojsonPath, function(error, root) {
+            if (error) {
+                return console.error(error);
+            }
+
+            mapLayer.selectAll("path")
+                .data(root.features)
+                .enter()
+                .append("path")
+                .attr("stroke", "#999999")
+                .attr("stroke-width",1)
+                .attr("fill-opacity", 0.6)
+                .attr("stroke-opacity", 1)
+                .attr("fill", "#f1f4c7")
+                .attr("d", path);
+
+        });
+
+        d3.json(roadsGeojsonPath, function(error, root) {
+            if (error) {
+                return console.error(error);
+            }
+
+            roadsLayer.selectAll("path")
+                .data(root.features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("stroke-width", "5px")
+                .attr("fill-opacity", 0.0)
+                .attr("stroke", function(d,i) { 
+                    //这里我们固定返回蓝色
+                    return d3.rgb("#336699");
+                })
+                .on("mouseover",function(d,i){
+                    d3.select(this)
+                        .transition().duration(100)
+                        .attr("stroke", "#ff5555");
+                        document.getElementById("avg_speed").innerText = 
+                            Math.round(d.properties.avg_speed, 1).toString() + "km/h";
+                })
+                .on("mouseout",function(d,i){
+                    d3.select(this)
+                        .transition().duration(500)
+                        .attr("stroke", "#336699");
+                        document.getElementById("avg_speed").innerText = "";
+                });
+
+        });
+
+    </script>
+</html>
